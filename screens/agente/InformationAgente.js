@@ -4,19 +4,16 @@ import {
   Text, 
   Image, 
   ScrollView, 
-  TouchableOpacity,   
+  TouchableOpacity,  
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {SafeAreaView} from 'react-native-safe-area-context';
 
 const MonitoringScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity 
-          onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('HomeAgente')}
-          activeOpacity={0.7}
-        >
+        <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={28} color="#FF8C00" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Information</Text>
@@ -95,9 +92,9 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
+    padding: 20,
     backgroundColor: '#FFF',
+    paddingTop: 50, 
   },
   headerTitle: {
     fontSize: 22,
@@ -113,11 +110,11 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     padding: 20,
     marginBottom: 20,
-    elevation: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
+    elevation: 3,
   },
   cardTitle: {
     fontSize: 18,

@@ -12,7 +12,7 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import Menu from '../../components/Menu';
+import MenuAgente from '../../components/MenuAgente';
 
 export default function Perfil({ navigation }) {
   return (
@@ -86,7 +86,7 @@ export default function Perfil({ navigation }) {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      <Menu />
+      <MenuAgente />
     </SafeAreaView>
   );
 }

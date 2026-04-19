@@ -5,16 +5,16 @@ import {
   Text, 
   Image, 
   ScrollView, 
-  TouchableOpacity,  
+  TouchableOpacity,   
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import {SafeAreaView} from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const Sobre = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.navigate('Home')}>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={28} color="#FF8C00" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>IRIS</Text>
@@ -30,7 +30,6 @@ const Sobre = ({ navigation }) => {
         </View>
 
         <View style={styles.whiteCard}>
-          
           <Text style={styles.mainTitle}>IRIS</Text>
           <Text style={styles.subTitle}>Imaging-based Risk Identification System</Text>
           

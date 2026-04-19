@@ -36,9 +36,10 @@ export default function Menu() {
   return (
     <View style={styles.navBarContainer}>
       <View style={styles.navBar}>
-        {renderNavItem('home', 'Home', Feather, 'home')}
-        {renderNavItem('search', 'Mapa', Ionicons, 'search', true)}
-        {renderNavItem('profile', 'Perfil', Feather, 'user')}
+        {renderNavItem('home', 'HomeAgente', Feather, 'home')}
+        {renderNavItem('search', 'MapaAgente', Ionicons, 'search', true)}
+        {renderNavItem('alerts', 'AlertasAgente', Feather, 'alert-triangle')}
+        {renderNavItem('profile', 'PerfilAgente', Feather, 'user')}
       </View>
     </View>
   );

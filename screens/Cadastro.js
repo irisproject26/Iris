@@ -87,7 +87,7 @@ const Cadastro = ({ navigation }) => {
         <TouchableOpacity 
           style={styles.signUpButton} 
           activeOpacity={0.7}
-          onPress={() => navigation.replace("Home")}
+          onPress={() => navigation.replace("HomeAgente")}
         >
           <Text style={styles.signUpButtonText}>Sign up</Text>
         </TouchableOpacity>

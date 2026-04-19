@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, FlatList, StyleSheet, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import {SafeAreaView} from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function VisitaAgente({ navigation }) {
   const [tab, setTab] = useState('pending');
@@ -11,25 +11,11 @@ export default function VisitaAgente({ navigation }) {
     { id: '3', local: 'Home', addr: 'Avenida Paulista, 689 - SP, Brazil', date: '02/26/2025', time: '10:00 AM', status: 'pending' },
   ]);
 
-  const handleAccept = (id) => {
-    Alert.alert("Confirm", "Do you want to allocate this visit to yourself?", [
-      { text: "Cancel", style: "cancel" },
-      { 
-        text: "Yes", 
-        onPress: () => {
-          setVisitas(prev => prev.map(v => v.id === id ? { ...v, status: 'my' } : v));
-          setTab('my'); // Pula para a aba de "Minhas Visitas"
-        } 
-      }
-    ]);
-  };
-
   const listaFiltrada = visitas.filter(v => v.status === (tab === 'pending' ? 'pending' : 'my'));
 
   return (
     <SafeAreaView style={styles.container}>
       
-      {/* HEADER */}
       <View style={styles.headerArea}>
         <View style={styles.topRow}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -55,7 +41,6 @@ export default function VisitaAgente({ navigation }) {
         </View>
       </View>
 
-      {/* CONTEÚDO */}
       <View style={styles.whiteSheet}>
         <Text style={styles.listTitle}>
           {tab === 'pending' ? "Visits available" : "Allocated to me"}
@@ -70,7 +55,15 @@ export default function VisitaAgente({ navigation }) {
             <TouchableOpacity 
               style={styles.card} 
               activeOpacity={0.8}
-              onPress={() => tab === 'pending' && handleAccept(item.id)}
+              onPress={() => {
+                if (tab === 'pending') {
+                  // Navega para a tela YesNoAgente passando os dados da visita
+                  navigation.navigate('YesNoAgente', { visita: item });
+                } else {
+                  // Se já for "My Visits", você pode navegar para uma tela de detalhes simples ou execução
+                  Alert.alert("Info", "This visit is already allocated to you.");
+                }
+              }}
             >
               <View style={styles.cardOrange}>
                 <View style={{ flex: 1 }}>
