@@ -1,17 +1,33 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, ScrollView, Image, Alert } from 'react-native';
+import { 
+  StyleSheet, 
+  View, 
+  Text, 
+  TextInput, 
+  TouchableOpacity, 
+  ScrollView, 
+  Image, 
+  Alert,
+  ActivityIndicator 
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import MapView, { Marker } from 'react-native-maps';
 import * as ImagePicker from 'expo-image-picker';
-import {SafeAreaView} from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import api from "../../services/api"; 
 
-export default function Denuncia({ navigation }) {
+export default function Denuncia({ navigation, route }) {
+  // Pega o userId e a flag isAgente enviados pela Home correspondente
+  const userId = route?.params?.userId;
+  const isAgente = route?.params?.isAgente; 
+
   const [category, setCategory] = useState('');
-  const [urgency, setUrgency] = useState(null);
+  const [urgency, setUrgency] = useState(null); 
   const [image, setImage] = useState(null);
   const [address, setAddress] = useState('');
   const [description, setDescription] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
@@ -37,16 +53,73 @@ export default function Denuncia({ navigation }) {
     if (!result.canceled) setImage(result.assets[0].uri);
   };
 
-  const handleSubmit = () => {
-    Alert.alert("Success", "Your report has been submitted!");
-    navigation.goBack(); 
+  const handleSubmit = async () => {
+    if (!category || !address || urgency === null) {
+      Alert.alert("Error", "Please fill category, address and urgency.");
+      return;
+    }
+
+    if (!userId) {
+      Alert.alert("Error", "User not identified. Please log in again.");
+      return;
+    }
+
+    const formData = new FormData();
+
+    if (image) {
+      const filename = image.split('/').pop();
+      const match = /\.(\w+)$/.exec(filename);
+      const type = match ? `image/${match[1]}` : `image`;
+
+      formData.append('Photo', {
+        uri: image,
+        name: filename,
+        type: type,
+      });
+    }
+
+    formData.append('Category', category);
+    formData.append('LocalAddress', address);
+    formData.append('Urgency', urgency); 
+    formData.append('AdditionalInfo', description);
+    formData.append('UserId', userId);
+
+    try {
+      setLoading(true);
+      
+      const response = await api.post("/api/Denuncias", formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      if (response.status === 201 || response.status === 200) {
+        Alert.alert("Success", "Your report has been submitted!", [
+          {
+            text: "OK",
+            onPress: () => {
+              // Se for agente, volta para HomeAgente. Se não, volta para Home.
+              if (isAgente) {
+                navigation.navigate('HomeAgente', { userId: userId });
+              } else {
+                navigation.navigate('Home', { userId: userId });
+              }
+            }
+          }
+        ]);
+      }
+    } catch (error) {
+      console.log("Submit error:", error);
+      Alert.alert("Error", "Could not send report. Check your connection.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Botão Voltar configurado */}
       <View style={styles.topNav}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity onPress={() => isAgente ? navigation.navigate('HomeAgente', { userId }) : navigation.goBack()}>
           <Ionicons name="arrow-back" size={32} color="black" />
         </TouchableOpacity>
       </View>
@@ -97,6 +170,8 @@ export default function Denuncia({ navigation }) {
                 <Picker.Item label="Category..." value="" color="#A0A0A0" />
                 <Picker.Item label="Arboviroses" value="arboviroses" />
                 <Picker.Item label="Sanitation" value="sanitation" />
+                <Picker.Item label="Arthropods" value="artropodes" />
+                <Picker.Item label="Other" value="other" />
               </Picker>
             </View>
           </View>
@@ -130,28 +205,28 @@ export default function Denuncia({ navigation }) {
           <Text style={styles.label}>Please indicate the urgency level</Text>
           
           <TouchableOpacity 
-            style={[styles.urgencyBtn, { borderColor: '#FFBABA' }, urgency === 'high' && { backgroundColor: '#FFBABA' }]}
-            onPress={() => setUrgency('high')}
+            style={[styles.urgencyBtn, { borderColor: '#FFBABA' }, urgency === 2 && { backgroundColor: '#FFBABA' }]}
+            onPress={() => setUrgency(2)}
           >
             <Text style={styles.urgencyText}>High (with larvae or insects)</Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
-            style={[styles.urgencyBtn, { borderColor: '#C7E5C7' }, urgency === 'medium' && { backgroundColor: '#C7E5C7' }]}
-            onPress={() => setUrgency('medium')}
+            style={[styles.urgencyBtn, { borderColor: '#C7E5C7' }, urgency === 1 && { backgroundColor: '#C7E5C7' }]}
+            onPress={() => setUrgency(1)}
           >
             <Text style={styles.urgencyText}>Medium (presents danger)</Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
-            style={[styles.urgencyBtn, { borderColor: '#D1E8FF' }, urgency === 'low' && { backgroundColor: '#D1E8FF' }]}
-            onPress={() => setUrgency('low')}
+            style={[styles.urgencyBtn, { borderColor: '#D1E8FF' }, urgency === 0 && { backgroundColor: '#D1E8FF' }]}
+            onPress={() => setUrgency(0)}
           >
             <Text style={styles.urgencyText}>Low (potential problem)</Text>
           </TouchableOpacity>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>There are any other important information?</Text>
+            <Text style={styles.label}>Other important information</Text>
             <View style={[styles.inputWrapper, styles.textAreaWrapper]}>
               <TextInput 
                 style={styles.textArea} 
@@ -163,8 +238,16 @@ export default function Denuncia({ navigation }) {
             </View>
           </View>
 
-          <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-            <Text style={styles.submitBtnText}>Submit</Text>
+          <TouchableOpacity 
+            style={[styles.submitButton, loading && { backgroundColor: '#ccc' }]} 
+            onPress={handleSubmit}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#FF751F" />
+            ) : (
+              <Text style={styles.submitBtnText}>Submit</Text>
+            )}
           </TouchableOpacity>
         </View>
       </ScrollView>

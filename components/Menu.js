@@ -1,11 +1,15 @@
-import React, { useState } from 'react'; 
+import React from 'react'; 
 import { StyleSheet, View, TouchableOpacity } from 'react-native';
 import { Ionicons, Feather } from '@expo/vector-icons';
-import { useNavigation, useRoute } from '@react-navigation/native'; 
+import { useNavigation, useRoute } from '@react-navigation/native';
 
 export default function Menu() {
   const navigation = useNavigation();
   const route = useRoute();
+
+  // Captura o userId que está na tela atual (Home, Mapa ou Perfil)
+  // Isso garante que o ID não se perca ao navegar entre as abas
+  const userId = route.params?.userId;
 
   const renderNavItem = (tabName, screenName, IconComponent, iconName, isLibIonicons = false) => {
     const isActive = route.name === screenName;
@@ -15,7 +19,10 @@ export default function Menu() {
         {isActive && <View style={styles.activeDot} />}
         
         <TouchableOpacity
-          onPress={() => navigation.navigate(screenName)} 
+          onPress={() => {
+            // Repassa o userId para a próxima tela
+            navigation.navigate(screenName, { userId: userId });
+          }}
           activeOpacity={0.8}
           style={[
             styles.navItem,
@@ -51,7 +58,7 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
     height: 90, 
-    backgroundColor: 'transparent', 
+    backgroundColor: 'transparent',
     justifyContent: 'center',
     zIndex: 999,
   },

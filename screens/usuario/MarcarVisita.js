@@ -8,13 +8,18 @@ import {
   TouchableOpacity, 
   ScrollView, 
   Image, 
-  Alert 
+  Alert,
+  ActivityIndicator 
 } from 'react-native';
 import { Ionicons, Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import api from "../../services/api"; // Caminho corrigido para sair de screens/usuario
 
-export default function MarcarVisita({ navigation }) {
+export default function MarcarVisita({ navigation, route }) {
+  // Blindagem: Tenta pegar o userId com segurança
+  const userId = route?.params?.userId;
+
   const [typeAddress, setTypeAddress] = useState('Home');
   const [date, setDate] = useState(new Date());
   const [time, setTime] = useState(new Date());
@@ -22,6 +27,7 @@ export default function MarcarVisita({ navigation }) {
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [address, setAddress] = useState('');
   const [reason, setReason] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const onDateChange = (event, selectedDate) => {
     setShowDatePicker(false);
@@ -33,9 +39,53 @@ export default function MarcarVisita({ navigation }) {
     if (selectedTime) setTime(selectedTime);
   };
 
-  const handleSubmit = () => {
-    Alert.alert("Scheduled!", "Your visit has been scheduled successfully.");
-    navigation.goBack();
+  const handleSubmit = async () => {
+    // 1. Validações básicas
+    if (!address || !reason) {
+      Alert.alert("Erro", "Por favor, preencha o endereço e o motivo da visita.");
+      return;
+    }
+
+    // 2. Verifica se o ID do usuário existe
+    if (!userId) {
+      Alert.alert("Erro", "Usuário não identificado. Tente fazer login novamente.");
+      return;
+    }
+
+    // 3. Formata a data e hora para o padrão ISO (C# espera isso)
+    const scheduledDate = new Date(date);
+    scheduledDate.setHours(time.getHours());
+    scheduledDate.setMinutes(time.getMinutes());
+
+    // 4. Monta o objeto (Payload) conforme o seu Swagger
+    const payload = {
+      addressType: typeAddress,
+      address: address,
+      scheduledDate: scheduledDate.toISOString(),
+      reason: reason,
+      status: 0, 
+      userId: userId, 
+    };
+
+    try {
+      setLoading(true);
+      const response = await api.post("/api/Visitas", payload);
+
+      if (response.status === 201 || response.status === 200) {
+        Alert.alert("Done!", "Your visit was successfully scheduled.");
+        navigation.goBack();
+      }
+    } catch (error) {
+      console.log("Error", error);
+      // Se não houver resposta, o servidor está offline ou IP está errado
+      if (!error.response) {
+        Alert.alert("Error", "We were unable to connect to the server. Please check the API IP address.");
+      } else {
+        Alert.alert("Erro", "Internal server error during registration.");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -122,8 +172,16 @@ export default function MarcarVisita({ navigation }) {
             </View>
           </View>
 
-          <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-            <Text style={styles.submitText}>Submit</Text>
+          <TouchableOpacity 
+            style={[styles.submitButton, loading && { backgroundColor: '#ccc' }]} 
+            onPress={handleSubmit}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#FF751F" />
+            ) : (
+              <Text style={styles.submitText}>Submit</Text>
+            )}
           </TouchableOpacity>
         </View>
 
@@ -209,6 +267,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
     width: '80%',
     alignSelf: 'center',
+    elevation: 2,
   },
   submitText: { color: '#FF751F', fontWeight: 'bold', fontSize: 18 }
 });

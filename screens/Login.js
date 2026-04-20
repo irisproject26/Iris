@@ -6,12 +6,49 @@ import {
   TextInput,
   TouchableOpacity,
   StatusBar,
+  Alert,
 } from "react-native";
-import {SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from "react-native-safe-area-context";
+import api from "../services/api";
 
 const Login = ({ navigation }) => {
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
+
+  const handleLogin = async () => {
+    if (!name || !password) {
+      Alert.alert("Error", "Enter your email and password.");
+      return;
+    }
+
+    try {
+      // Chamada para sua API
+      const response = await api.post("/api/Users/Login", {
+        email: name,
+        senha: password,
+      });
+
+      if (response.status === 200) {
+        const { id, role } = response.data;
+
+        if (role === 1) {
+          // Agora o nome "HomeAgente" existe no App.js
+          navigation.replace("HomeAgente", { userId: id });
+        } else {
+          navigation.replace("Home", { userId: id });
+        }
+      }
+    } catch (error) {
+      console.log(error);
+      if (!error.response) {
+        Alert.alert("Error ", "The server was not found.");
+      } else if (error.response.status === 401) {
+        Alert.alert("Error", "Invalid email or password.");
+      } else {
+        Alert.alert("Erro", "Internal server error.");
+      }
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -28,11 +65,12 @@ const Login = ({ navigation }) => {
         </View>
 
         <View style={styles.inputWrapper}>
-          <Text style={styles.label}>NAME</Text>
+          <Text style={styles.label}>EMAIL</Text>
           <TextInput
             style={styles.input}
-            placeholder="Your name"
+            placeholder="your@email.com"
             placeholderTextColor="#C7C7CD"
+            autoCapitalize="none"
             value={name}
             onChangeText={setName}
           />
@@ -50,10 +88,10 @@ const Login = ({ navigation }) => {
           />
         </View>
 
-        <TouchableOpacity 
-          style={styles.loginButton} 
+        <TouchableOpacity
+          style={styles.loginButton}
           activeOpacity={0.7}
-          onPress={() => navigation.replace('Home')}
+          onPress={handleLogin} // <--- CHAMA A FUNÇÃO QUE VALIDA, NÃO VAI DIRETO!
         >
           <Text style={styles.loginButtonText}>Login</Text>
         </TouchableOpacity>
@@ -62,8 +100,8 @@ const Login = ({ navigation }) => {
           <TouchableOpacity>
             <Text style={styles.footerText}>Forgot Password?</Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity onPress={() => navigation.navigate('Cadastro')}>
+
+          <TouchableOpacity onPress={() => navigation.navigate("Cadastro")}>
             <Text
               style={[styles.footerText, { fontWeight: "bold", marginTop: 8 }]}
             >
@@ -82,17 +120,27 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
   },
   headerBackground: {
-    height: "30%", 
+    height: "30%",
     backgroundColor: "#FFDE59",
     borderBottomLeftRadius: 60,
     borderBottomRightRadius: 60,
     overflow: "hidden",
   },
+  circleDecoration: {
+    // Adicionado para não dar erro já que está no JSX
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    position: "absolute",
+    top: -20,
+    right: -20,
+  },
   formContainer: {
     flex: 1,
     paddingHorizontal: 40,
-    justifyContent: "center", 
-    alignItems: "center", 
+    justifyContent: "center",
+    alignItems: "center",
   },
   headerTextWrapper: {
     alignItems: "center",

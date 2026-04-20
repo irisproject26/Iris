@@ -1,23 +1,37 @@
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import api from '../../services/api'; // Ajuste o caminho se necessário
 
-export default function YesNoAgente() {
-  const navigation = useNavigation();
+export default function YesNoAgente({ route, navigation }) {
+  const { visita, userId } = route.params;
+  const [updating, setUpdating] = useState(false);
 
-  const info = {
-    name: "Mary Smith",
-    type: "Home",
-    address: "Avenida Paulista, 26 - SP, Brazil",
-    date: "02/28/2025",
-    time: "11:30 AM",
-    reason: "I am requesting a visit from an endemic disease control agent due to the large number of mosquitoes in the area. Although the swimming pool is rarely used, there is concern about possible mosquito breeding, which may pose health risks."
+  const handleUpdateStatus = async (newStatus) => {
+    setUpdating(true);
+    try {
+      const response = await api.patch(`/api/Visitas/status/${visita.id}`, newStatus, {
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (response.status === 200 || response.status === 204) {
+        const msg = newStatus === 1 ? "Visit successfully scheduled!" : "Visit marked as pending.";
+        Alert.alert("Success", msg, [
+          { text: "OK", onPress: () => navigation.navigate('VisitaAgente', { userId }) }
+        ]);
+      }
+    } catch (error) {
+      console.error("Error updating status:", error);
+      Alert.alert("Error", "Error updating status:");
+    } finally {
+      setUpdating(false);
+    }
   };
 
   const InfoRow = ({ label, value }) => (
     <View style={styles.infoRow}>
       <Text style={styles.label}>{label}</Text>
-      <Text style={styles.value}>{value}</Text>
+      <Text style={styles.value}>{value || 'Não informado'}</Text>
       <View style={styles.divider} />
     </View>
   );
@@ -37,41 +51,45 @@ export default function YesNoAgente() {
         <ScrollView showsVerticalScrollIndicator={false}>
           <Text style={styles.title}>Information</Text>
 
-          <InfoRow label="Name" value={info.name} />
-          <InfoRow label="Type" value={info.type} />
-          <InfoRow label="Address" value={info.address} />
-          <InfoRow label="Date" value={info.date} />
-          <InfoRow label="Time" value={info.time} />
+          {/* Dados dinâmicos vindos do banco */}
+          <InfoRow label="Name" value={visita.user?.nome} />
+          <InfoRow label="Type" value={visita.addressType} />
+          <InfoRow label="Address" value={visita.address} />
+          <InfoRow label="Date" value={visita.scheduledDate?.split('T')[0]} />
+          <InfoRow label="Time" value={visita.scheduledDate ? visita.scheduledDate.split('T')[1].substring(0, 5) : null} />
 
           <View style={styles.infoRow}>
             <Text style={styles.label}>Reason for visit</Text>
-            <Text style={styles.reasonText}>{info.reason}</Text>
+            <Text style={styles.reasonText}>{visita.reason || 'Nenhuma descrição fornecida.'}</Text>
             <View style={styles.divider} />
           </View>
 
           <Text style={[styles.label, { marginTop: 10 }]}>Status</Text>
 
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity 
-              style={[styles.btn, styles.btnYes]} 
-              onPress={() => Alert.alert("Success", "Visit allocated!")}
-            >
-              <Text style={styles.btnText}>Yes</Text>
-            </TouchableOpacity>
+          {updating ? (
+            <ActivityIndicator size="large" color="#FF751F" style={{ marginTop: 20 }} />
+          ) : (
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity 
+                style={[styles.btn, styles.btnYes]} 
+                onPress={() => handleUpdateStatus(1)} // 1 = Aceita
+              >
+                <Text style={styles.btnText}>Accept</Text>
+              </TouchableOpacity>
 
-            <TouchableOpacity 
-              style={[styles.btn, styles.btnNo]}
-              onPress={() => Alert.alert("Cancelled", "Visit denied.")}
-            >
-              <Text style={styles.btnText}>No</Text>
-            </TouchableOpacity>
-          </View>
+              <TouchableOpacity 
+                style={[styles.btn, styles.btnNo]}
+                onPress={() => handleUpdateStatus(0)} // 0 = Pendente
+              >
+                <Text style={styles.btnText}>Deny</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </ScrollView>
       </View>
     </View>
   );
 }
-
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFDE59' },
   yellowDecoration: { height: 220, overflow: 'hidden' },

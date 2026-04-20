@@ -6,15 +6,47 @@ import {
   TextInput,
   TouchableOpacity,
   StatusBar,
+  Alert, 
 } from "react-native";
-import {SafeAreaView} from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+import api from "../services/api"; 
 
 const Cadastro = ({ navigation }) => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [dob, setDob] = useState("");
+  const [dob, setDob] = useState(""); 
+  const handleSignUp = async () => {
+    if (!name || !email || !password) {
+      Alert.alert("Atenção", "Preencha nome, e-mail e senha.");
+      return;
+    }
 
+    try {
+      const userData = {
+        nome: name,
+        email: email,
+        senha: password,
+        role: 0 
+      };
+
+      const response = await api.post("/api/Users", userData);
+
+      if (response.status === 201 || response.status === 200) {
+        Alert.alert("Success!", "Your account has been successfully created!", [
+          { text: "Start", onPress: () => navigation.replace("Home") }
+        ]);
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      let msg = "We were unable to connect to the server.";
+      if (error.response) {
+        msg = `Error: ${error.response.data.message || "Invalid data"}`;
+      }
+      Alert.alert("Error", msg);
+    }
+  };
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
@@ -56,6 +88,7 @@ const Cadastro = ({ navigation }) => {
             placeholder="Your email"
             placeholderTextColor="#C7C7CD"
             keyboardType="email-address"
+            autoCapitalize="none" // Evita que o celular coloque letra maiúscula no e-mail
             value={email}
             onChangeText={setEmail}
           />
@@ -73,21 +106,11 @@ const Cadastro = ({ navigation }) => {
           />
         </View>
 
-        <View style={styles.inputWrapper}>
-          <Text style={styles.label}>DATE OF BIRTH</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Your date of birth (DD/MM/YYYY)"
-            placeholderTextColor="#C7C7CD"
-            value={dob}
-            onChangeText={setDob}
-          />
-        </View>
 
         <TouchableOpacity 
           style={styles.signUpButton} 
           activeOpacity={0.7}
-          onPress={() => navigation.replace("HomeAgente")}
+          onPress={handleSignUp} // CHAMA A FUNÇÃO DE INTEGRAÇÃO
         >
           <Text style={styles.signUpButtonText}>Sign up</Text>
         </TouchableOpacity>

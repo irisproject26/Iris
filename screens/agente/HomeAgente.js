@@ -1,3 +1,4 @@
+import React from "react";
 import {
   View,
   Text,
@@ -13,7 +14,10 @@ import MenuAgente from "../../components/MenuAgente";
 
 const { width } = Dimensions.get("window");
 
-const HomeAgente = ({ navigation }) => {
+const HomeAgente = ({ navigation, route }) => {
+  // Captura o userId que vem do login
+  const userId = route.params?.userId;
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFDE59" />
@@ -25,7 +29,7 @@ const HomeAgente = ({ navigation }) => {
         <View style={styles.yellowHeader}>
           <View style={styles.topIcons}>
             <View /> 
-            <TouchableOpacity style={styles.bellBadge} onPress={() => navigation.navigate('Notification')}>
+            <TouchableOpacity style={styles.bellBadge} onPress={() => navigation.navigate('Notification', { userId })}>
               <Image
                 source={require("../../assets/bell1.png")}
                 style={styles.bellImage}
@@ -46,14 +50,18 @@ const HomeAgente = ({ navigation }) => {
           <Text style={styles.sectionTitle}>Explore the functionalities</Text>
 
           <View style={styles.row}>
-            <TouchableOpacity style={styles.outlineButton} onPress={() => navigation.navigate('InformationAgente')}>
+            <TouchableOpacity 
+              style={styles.outlineButton} 
+              onPress={() => navigation.navigate('InformationAgente', { userId })}
+            >
               <Text style={styles.outlineIcon}>ⓘ</Text>
               <Text style={styles.outlineText}>Information</Text>
             </TouchableOpacity>
 
+            {/* CORREÇÃO AQUI: Passando userId e isAgente para a Denúncia */}
             <TouchableOpacity
               style={styles.outlineButton}
-              onPress={() => navigation.navigate('Denuncia')}
+              onPress={() => navigation.navigate('Denuncia', { userId, isAgente: true })}
             >
               <Image
                 source={require("../../assets/reportImg.png")}
@@ -71,32 +79,12 @@ const HomeAgente = ({ navigation }) => {
           <Text style={styles.visitInstruction}>
             See the requests of the users. You can confirm or deny.
           </Text>
-          <Text style={styles.visitDate}>02/28/2025</Text>
 
-          <View style={styles.requestsContainer}>
-            <View style={styles.requestItem}>
-              <View>
-                <Text style={styles.requestType}>School</Text>
-                <Text style={styles.requestAddress}>Avenida Paulista, 28 - SP, Brazil</Text>
-              </View>
-              <View style={styles.statusContainer}>
-                <Text style={styles.newBadge}>new</Text>
-                <View style={styles.orangeDot} />
-              </View>
-            </View>
-
-            <View style={styles.requestItem}>
-              <View>
-                <Text style={styles.requestType}>Company</Text>
-                <Text style={styles.requestAddress}>Avenida Paulista, 45 - SP, Brazil</Text>
-              </View>
-              <View style={styles.statusContainer}>
-                <View style={styles.orangeDot} />
-              </View>
-            </View>
-          </View>
-
-          <TouchableOpacity style={styles.seeVisitsButton} onPress={() => navigation.navigate('VisitaAgente')}>
+          {/* Passando userId para a lista de visitas */}
+          <TouchableOpacity 
+            style={styles.seeVisitsButton} 
+            onPress={() => navigation.navigate('VisitaAgente', { userId })}
+          >
             <Text style={styles.buttonText}>See visits</Text>
           </TouchableOpacity>
 
@@ -114,10 +102,6 @@ const HomeAgente = ({ navigation }) => {
              <View style={styles.dot} />
              <View style={styles.dot} />
           </View>
-          {/* 
-          <TouchableOpacity style={styles.addCampaignButton}>
-            <Text style={styles.addCampaignText}>Add more Campaigns</Text>
-          </TouchableOpacity> */}
 
           <View style={styles.irisContainer}>
             <View style={styles.irisInfo}>
@@ -126,7 +110,7 @@ const HomeAgente = ({ navigation }) => {
                 Get to know better about IRIS (Imaging-based Risk Identification
                 System) and learn more about its goal.
               </Text>
-              <TouchableOpacity style={styles.orangeButton} onPress={() => navigation.navigate('Sobre')}>
+              <TouchableOpacity style={styles.orangeButton} onPress={() => navigation.navigate('Sobre', { userId })}>
                 <Text style={styles.buttonText}>Learn more</Text>
               </TouchableOpacity>
             </View>
@@ -142,10 +126,13 @@ const HomeAgente = ({ navigation }) => {
         </View>
       </ScrollView>
 
-      <MenuAgente />
+      {/* Importante: O menu também pode precisar do userId se tiver botões de navegação */}
+      <MenuAgente userId={userId} />
     </SafeAreaView>
   );
 };
+
+// ... mantenha seus estilos abaixo'
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFFFFF' },

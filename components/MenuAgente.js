@@ -1,13 +1,16 @@
-import React, { useState } from 'react'; 
+import React from 'react'; 
 import { StyleSheet, View, TouchableOpacity } from 'react-native';
 import { Ionicons, Feather } from '@expo/vector-icons';
-import { useNavigation, useRoute } from '@react-navigation/native'; 
+import { useNavigation, useRoute } from '@react-navigation/native';
 
-export default function Menu() {
+export default function MenuAgente() {
   const navigation = useNavigation();
   const route = useRoute();
 
-  const renderNavItem = (tabName, screenName, IconComponent, iconName, isLibIonicons = false) => {
+  // Captura o userId para não perder a identificação entre as telas do agente
+  const userId = route.params?.userId;
+
+  const renderNavItem = (screenName, IconComponent, iconName, isLibIonicons = false) => {
     const isActive = route.name === screenName;
 
     return (
@@ -15,7 +18,10 @@ export default function Menu() {
         {isActive && <View style={styles.activeDot} />}
         
         <TouchableOpacity
-          onPress={() => navigation.navigate(screenName)} 
+          onPress={() => {
+            // Navega para as rotas exclusivas do agente definidas no App.js
+            navigation.navigate(screenName, { userId: userId });
+          }}
           activeOpacity={0.8}
           style={[
             styles.navItem,
@@ -36,10 +42,10 @@ export default function Menu() {
   return (
     <View style={styles.navBarContainer}>
       <View style={styles.navBar}>
-        {renderNavItem('home', 'HomeAgente', Feather, 'home')}
-        {renderNavItem('search', 'MapaAgente', Ionicons, 'search', true)}
-        {renderNavItem('alerts', 'AlertasAgente', Feather, 'alert-triangle')}
-        {renderNavItem('profile', 'PerfilAgente', Feather, 'user')}
+        {/* Usando as rotas de Agente que você registrou no App.js */}
+        {renderNavItem('HomeAgente', Feather, 'home')}
+        {renderNavItem('MapaAgente', Ionicons, 'map-outline', true)}
+        {renderNavItem('PerfilAgente', Feather, 'user')}
       </View>
     </View>
   );
@@ -52,7 +58,7 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
     height: 90, 
-    backgroundColor: 'transparent', 
+    backgroundColor: 'transparent',
     justifyContent: 'center',
     zIndex: 999,
   },

@@ -1,99 +1,129 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, FlatList, StyleSheet, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { 
+  View, 
+  Text, 
+  TouchableOpacity, 
+  FlatList, 
+  Alert, 
+  ActivityIndicator,
+  StyleSheet // <--- Faltava adicionar isso aqui!
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import api from '../../services/api'; 
+import MenuAgente from '../../components/MenuAgente';
 
-export default function VisitaAgente({ navigation }) {
-  const [tab, setTab] = useState('pending');
-  const [visitas, setVisitas] = useState([
-    { id: '1', local: 'Home', addr: 'Avenida Paulista, 26 - SP, Brazil', date: '02/28/2025', time: '11:30 AM', status: 'pending' },
-    { id: '2', local: 'School', addr: 'Avenida Paulista, 200 - SP, Brazil', date: '02/27/2025', time: '09:30 AM', status: 'pending' },
-    { id: '3', local: 'Home', addr: 'Avenida Paulista, 689 - SP, Brazil', date: '02/26/2025', time: '10:00 AM', status: 'pending' },
-  ]);
+export default function VisitaAgente({ navigation, route }) {
+  const [visitas, setVisitas] = useState([]);
+  const [loading, setLoading] = useState(true);
+  
+  const userId = route.params?.userId;
 
-  const listaFiltrada = visitas.filter(v => v.status === (tab === 'pending' ? 'pending' : 'my'));
+  // Função para buscar dados de ambos os endpoints simultaneamente
+  const fetchVisitas = async () => {
+    setLoading(true);
+    try {
+      // Executa as duas chamadas ao mesmo tempo
+      const [resPendentes, resAceitas] = await Promise.all([
+        api.get('/api/Visitas/pendentes'),
+        api.get('/api/Visitas/aceitas')
+      ]);
+
+      // Combina os arrays de retorno em um só
+      const todasAsVisitas = [...resPendentes.data, ...resAceitas.data];
+      
+      // Opcional: Ordenar por ID ou Data (ajuste conforme necessário)
+      todasAsVisitas.sort((a, b) => b.id - a.id);
+
+      setVisitas(todasAsVisitas);
+    } catch (error) {
+      console.error("Error retrieving visits:", error);
+      Alert.alert("Error", "We were unable to load server visits.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchVisitas();
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>
       
       <View style={styles.headerArea}>
         <View style={styles.topRow}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
+          <TouchableOpacity onPress={() => navigation.navigate('HomeAgente', { userId: userId })}>
             <Ionicons name="arrow-back" size={28} color="black" />
           </TouchableOpacity>
+          
           <Text style={styles.headerTitle}>Visits</Text>
-          <View style={{ width: 28 }} />
-        </View>
-
-        <View style={styles.tabWrapper}>
-          <TouchableOpacity 
-            style={[styles.tabBtn, tab === 'pending' && styles.tabActive]} 
-            onPress={() => setTab('pending')}
-          >
-            <Text style={[styles.tabText, tab === 'pending' && styles.textActive]}>Pending</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.tabBtn, tab === 'my' && styles.tabActive]} 
-            onPress={() => setTab('my')}
-          >
-            <Text style={[styles.tabText, tab === 'my' && styles.textActive]}>My Visits</Text>
+          
+          <TouchableOpacity onPress={fetchVisitas}>
+             <Ionicons name="refresh" size={24} color="black" />
           </TouchableOpacity>
         </View>
       </View>
 
       <View style={styles.whiteSheet}>
-        <Text style={styles.listTitle}>
-          {tab === 'pending' ? "Visits available" : "Allocated to me"}
-        </Text>
-
-        <FlatList
-          data={listaFiltrada}
-          keyExtractor={item => item.id}
-          showsVerticalScrollIndicator={false}
-          ListEmptyComponent={<Text style={{textAlign: 'center', marginTop: 20, color: '#888'}}>No visits here.</Text>}
-          renderItem={({ item }) => (
-            <TouchableOpacity 
-              style={styles.card} 
-              activeOpacity={0.8}
-              onPress={() => {
-                if (tab === 'pending') {
-                  // Navega para a tela YesNoAgente passando os dados da visita
-                  navigation.navigate('YesNoAgente', { visita: item });
-                } else {
-                  // Se já for "My Visits", você pode navegar para uma tela de detalhes simples ou execução
-                  Alert.alert("Info", "This visit is already allocated to you.");
-                }
-              }}
-            >
-              <View style={styles.cardOrange}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.cardPlace}>{item.local}</Text>
-                  <Text style={styles.cardAddress}>{item.addr}</Text>
+        {loading ? (
+          <ActivityIndicator size="large" color="#FF751F" style={{ marginTop: 50 }} />
+        ) : (
+          <FlatList
+            data={visitas}
+            keyExtractor={item => item.id.toString()}
+            showsVerticalScrollIndicator={false}
+            ListEmptyComponent={
+              <Text style={styles.emptyText}>No visits.</Text>
+            }
+            renderItem={({ item }) => (
+              <TouchableOpacity 
+                style={styles.card} 
+                activeOpacity={0.8}
+                onPress={() => navigation.navigate('YesNoAgente', { visita: item, userId: userId })}
+              >
+                <View style={styles.cardOrange}>
+                  <View style={{ flex: 1 }}>
+                    {/* Campos baseados no seu JSON de resposta */}
+                    <Text style={styles.cardPlace}>{item.addressType || 'Residência'}</Text>
+                    <Text style={styles.cardAddress}>{item.address}</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={26} color="white" />
                 </View>
-                <Ionicons name={tab === 'pending' ? "add-circle-outline" : "chevron-forward"} size={26} color="white" />
-              </View>
-              
-              <View style={styles.cardFooter}>
-                <View style={styles.footerItem}>
-                  <Ionicons name="calendar-outline" size={14} color="#666" />
-                  <Text style={styles.footerText}>{item.date}</Text>
+                
+                <View style={styles.cardFooter}>
+                  <View style={styles.footerItem}>
+                    <Ionicons name="calendar-outline" size={14} color="#666" />
+                    <Text style={styles.footerText}>
+                      {item.scheduledDate ? item.scheduledDate.split('T')[0] : 'Pendente'}
+                    </Text>
+                  </View>
+                  
+                  <View style={styles.footerItem}>
+                    {/* Status 0 = Pendente (Laranja), Outros = Aceito (Verde) */}
+                    <View 
+                      style={[
+                        styles.statusDot, 
+                        { backgroundColor: item.status === 0 ? '#FF751F' : '#4CAF50' }
+                      ]} 
+                    />
+                    <Text style={styles.footerText}>
+                      {item.status === 0 ? "Pendente" : "Aceita"}
+                    </Text>
+                  </View>
                 </View>
-                <View style={styles.footerItem}>
-                  <Ionicons name="time-outline" size={14} color="#666" />
-                  <Text style={styles.footerText}>{item.time}</Text>
-                </View>
-                <View style={styles.footerItem}>
-                  <View style={[styles.statusDot, { backgroundColor: tab === 'pending' ? '#FF751F' : '#4CAF50' }]} />
-                  <Text style={styles.footerText}>{tab === 'pending' ? "Pending" : "Confirmed"}</Text>
-                </View>
-              </View>
-            </TouchableOpacity>
-          )}
-        />
+              </TouchableOpacity>
+            )}
+          />
+        )}
       </View>
+
+      <MenuAgente />
     </SafeAreaView>
   );
 }
+
+// O restante do seu código (styles) permanece igual
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFDE59' },

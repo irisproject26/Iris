@@ -1,20 +1,73 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
-  StyleSheet, 
-  View, 
-  Text, 
-  TextInput, 
-  TouchableOpacity, 
-  ScrollView, 
-  KeyboardAvoidingView,
-  Platform
+  StyleSheet, View, Text, TextInput, TouchableOpacity, 
+  ScrollView, KeyboardAvoidingView, Platform, Alert, ActivityIndicator 
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
+import api from '../../services/api'; // Certifique-se que o caminho da sua API está correto
 import MenuAgente from '../../components/MenuAgente';
 
-export default function Perfil({ navigation }) {
+export default function PerfilAgente({ navigation, route }) {
+  // Captura o ID do agente vindo da navegação
+  const userId = route.params?.userId;
+
+  const [nome, setNome] = useState('');
+  const [email, setEmail] = useState('');
+  const [senha, setSenha] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  // 1. Carrega os dados atuais do agente ao abrir a tela
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (!userId) return;
+      try {
+        const response = await api.get(`/api/Users/${userId}`);
+        if (response.status === 200) {
+          setNome(response.data.nome);
+          setEmail(response.data.email);
+          // A senha geralmente não é retornada por segurança, deixamos em branco para alteração
+        }
+      } catch (error) {
+        console.error("Erro ao carregar perfil:", error);
+        Alert.alert("Erro", "Não foi possível carregar os dados do perfil.");
+      }
+    };
+
+    fetchUserData();
+  }, [userId]);
+
+  // 2. Função para salvar as alterações (PUT)
+  const handleUpdate = async () => {
+    if (!nome || !email) {
+      Alert.alert("Aviso", "Nome e E-mail são obrigatórios.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Conforme o seu Swagger, o Role do agente deve ser mantido como 1
+      const payload = {
+        id: userId,
+        nome: nome,
+        email: email,
+        senha: senha, // Se estiver vazio, a API deve tratar ou você deve validar
+        role: 1 
+      };
+
+      const response = await api.put(`/api/Users/${userId}`, payload);
+
+      if (response.status === 200 || response.status === 204) {
+        Alert.alert("Success", "Profile updated successfully!");
+      }
+    } catch (error) {
+      console.error("Error updating:", error);
+      Alert.alert("Error", "Failed to update profile. Please check your details.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView 
@@ -24,7 +77,6 @@ export default function Perfil({ navigation }) {
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           
           <View style={styles.header}>
-            {/* BOTÃO DE LOGOUT / VOLTAR */}
             <TouchableOpacity 
               style={styles.logoutButton}
               onPress={() => navigation.navigate('Login')}
@@ -45,13 +97,21 @@ export default function Perfil({ navigation }) {
           <View style={styles.content}>
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Name</Text>
-              <TextInput style={styles.input} placeholder="Your name" placeholderTextColor="#A1A1A1" />
+              <TextInput 
+                style={styles.input} 
+                value={nome}
+                onChangeText={setNome}
+                placeholder="Your name" 
+                placeholderTextColor="#A1A1A1" 
+              />
             </View>
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>E-mail</Text>
               <TextInput 
                 style={styles.input} 
+                value={email}
+                onChangeText={setEmail}
                 placeholder="Your e-mail" 
                 placeholderTextColor="#A1A1A1"
                 keyboardType="email-address"
@@ -60,27 +120,27 @@ export default function Perfil({ navigation }) {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Password</Text>
-              <TextInput style={styles.input} secureTextEntry placeholder="••••••" placeholderTextColor="#333" />
+              <Text style={styles.label}>New Password (Optional)</Text>
+              <TextInput 
+                style={styles.input} 
+                value={senha}
+                onChangeText={setSenha}
+                secureTextEntry 
+                placeholder="••••••" 
+                placeholderTextColor="#333" 
+              />
             </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Phone number</Text>
-              <View style={styles.phoneRow}>
-                <TouchableOpacity style={styles.countryPicker}>
-                  <Text style={styles.countryText}>+55 </Text>
-                  <Feather name="chevron-down" size={14} color="#666" />
-                </TouchableOpacity>
-                <TextInput 
-                  style={styles.phoneInput} 
-                  placeholder="(11) 99999-9999" 
-                  keyboardType="phone-pad"
-                />
-              </View>
-            </View>
-            
-            <TouchableOpacity style={styles.saveButton}>
-              <Text style={{ fontWeight: '700', fontSize: 16 }}>Save Changes</Text>
+            <TouchableOpacity 
+              style={styles.saveButton} 
+              onPress={handleUpdate}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="#000" />
+              ) : (
+                <Text style={styles.saveButtonText}>Save Changes</Text>
+              )}
             </TouchableOpacity>
           </View>
         </ScrollView>
